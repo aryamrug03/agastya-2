@@ -75,7 +75,8 @@ def clean_and_process_data(df):
         'SCM': 'PCMB',
         'SCP': 'PCMB',
         'E-LOB': 'ELOB',
-        'DLC-2': 'DLC'
+        'DLC-2': 'DLC',
+        'DLC2': 'DLC'
     }
     
     # Apply the mapping
@@ -385,6 +386,48 @@ if uploaded_file is not None:
             best_adapt.columns = ['Instructor', 'Improvement %', 'Students']
             best_adapt['Improvement %'] = best_adapt['Improvement %'].apply(lambda x: f"{x:.1f}%")
             st.dataframe(best_adapt, hide_index=True, use_container_width=True)
+        
+        # Instructors per Region
+        st.markdown("---")
+        st.subheader("👥 Number of Instructors per Region")
+        
+        instructors_per_region = filtered_df.groupby('Region')['Instructor Name'].nunique().reset_index()
+        instructors_per_region.columns = ['Region', 'Number of Instructors']
+        instructors_per_region = instructors_per_region.sort_values('Number of Instructors', ascending=False)
+        
+        # Create bar chart
+        fig_inst_region = go.Figure()
+        
+        fig_inst_region.add_trace(go.Bar(
+            x=instructors_per_region['Region'],
+            y=instructors_per_region['Number of Instructors'],
+            marker_color='#3498db',
+            text=instructors_per_region['Number of Instructors'],
+            textposition='outside',
+            textfont=dict(size=14)
+        ))
+        
+        fig_inst_region.update_layout(
+            title='Number of Instructors by Region',
+            xaxis_title='Region',
+            yaxis_title='Number of Instructors',
+            height=400,
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white'),
+            yaxis=dict(gridcolor='#404040'),
+            xaxis=dict(gridcolor='#404040')
+        )
+        
+        st.plotly_chart(fig_inst_region, use_container_width=True)
+        
+        # Display table
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.dataframe(instructors_per_region, hide_index=True, use_container_width=True)
+        with col2:
+            st.metric("Total Unique Instructors", filtered_df['Instructor Name'].nunique())
+            st.metric("Average per Region", f"{instructors_per_region['Number of Instructors'].mean():.1f}")
     
     # ===== TAB 3: GRADE ANALYSIS =====
     with tab3:

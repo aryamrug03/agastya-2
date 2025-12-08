@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
@@ -7,21 +8,131 @@ from plotly.subplots import make_subplots
 # Set page configuration
 st.set_page_config(page_title="Student Assessment Dashboard", layout="wide", page_icon="📊")
 
+# ===== DATA CLEANING FUNCTIONS =====
+
+def clean_and_process_data(df):
+    """
+    Clean and process student assessment data
+    
+    Parameters:
+    df (pd.DataFrame): Raw dataframe from Excel
+    
+    Returns:
+    pd.DataFrame: Cleaned and processed dataframe
+    """
+    
+    initial_count = len(df)
+    
+    # ===== STEP 1: DATA CLEANING =====
+    
+    # Define pre and post question columns
+    pre_questions = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5']
+    post_questions = ['Q1_Post', 'Q2_Post', 'Q3_Post', 'Q4_Post', 'Q5_Post']
+    
+    # Condition 1: Remove rows where one set has values and the other is all NULL
+    # If ANY pre question has values but ALL post questions are NULL
+    has_any_pre = df[pre_questions].notna().any(axis=1)
+    all_post_null = df[post_questions].isna().all(axis=1)
+    remove_condition_1 = has_any_pre & all_post_null
+    
+    # If ALL pre questions are NULL but ANY post question has values
+    all_pre_null = df[pre_questions].isna().all(axis=1)
+    has_any_post = df[post_questions].notna().any(axis=1)
+    remove_condition_2 = all_pre_null & has_any_post
+    
+    # Remove rows that meet either condition
+    df = df[~(remove_condition_1 | remove_condition_2)]
+    
+    cleaned_count = len(df)
+    
+    # ===== STEP 2: CALCULATE SCORES =====
+    
+    # Define answer columns
+    pre_answers = ['Q1_Answer', 'Q2_Answer', 'Q3_Answer', 'Q4_Answer', 'Q5_Answer']
+    post_answers = ['Q1_Post_Answer', 'Q2_Post_Answer', 'Q3_Post_Answer', 'Q4_Post_Answer', 'Q5_Post_Answer']
+    
+    # Calculate Pre-session scores
+    df['Pre_Score'] = 0
+    for q, ans in zip(pre_questions, pre_answers):
+        df['Pre_Score'] += (df[q] == df[ans]).astype(int)
+    
+    # Calculate Post-session scores
+    df['Post_Score'] = 0
+    for q, ans in zip(post_questions, post_answers):
+        df['Post_Score'] += (df[q] == df[ans]).astype(int)
+    
+    # ===== STEP 3: STANDARDIZE PROGRAM TYPES =====
+    
+    # Create a mapping for program types
+    program_type_mapping = {
+        'SC': 'PCMB',
+        'SC2': 'PCMB',
+        'SCB': 'PCMB',
+        'SCC': 'PCMB',
+        'SCM': 'PCMB',
+        'SCP': 'PCMB',
+        'E-LOB': 'ELOB',
+        'DLC-2': 'DLC'
+    }
+    
+    # Apply the mapping
+    df['Program Type'] = df['Program Type'].replace(program_type_mapping)
+    
+    # ===== STEP 4: CREATE PARENT CLASS =====
+    
+    # Extract parent class from Class column (e.g., "6-A" -> "6", "7-B" -> "7")
+    df['Parent_Class'] = df['Class'].astype(str).str.extract(r'^(\d+)')[0]
+    
+    # Filter for grades 6-10 only
+    df = df[df['Parent_Class'].isin(['6', '7', '8', '9', '10'])]
+    
+    # ===== STEP 5: CALCULATE TEST FREQUENCY =====
+    
+    # Count how many times each student has taken tests
+    df['Test_Count'] = df.groupby('Student Id')['Student Id'].transform('count')
+    
+    return df, initial_count, cleaned_count
+
+# ===== MAIN APPLICATION =====
+
 # Title and description
-st.title("📊 Student Assessment Analysis Dashboard")
-st.markdown("### Pre-Session vs Post-Session Performance Analysis")
+st.title("📊 Student Assessment Analysis Platform")
+st.markdown("### Upload, Clean, and Analyze Student Performance Data")
 
 # File uploader
-uploaded_file = st.file_uploader("Upload Cleaned Student Data (Excel)", type=['xlsx', 'xls'])
+uploaded_file = st.file_uploader("Upload Student Data Excel File", type=['xlsx', 'xls'])
 
 if uploaded_file is not None:
-    # Load data
-    df = pd.read_excel(uploaded_file)
     
-    # Ensure scores are calculated (in case raw data is uploaded)
-    if 'Pre_Score' not in df.columns or 'Post_Score' not in df.columns:
-        st.error("Please upload the cleaned data with Pre_Score and Post_Score columns.")
-        st.stop()
+    # Load and clean data
+    with st.spinner("Loading and cleaning data..."):
+        try:
+            raw_df = pd.read_excel(uploaded_file)
+            df, initial_count, cleaned_count = clean_and_process_data(raw_df)
+            
+            # Show cleaning summary
+            st.success("✅ Data cleaned successfully!")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Initial Records", initial_count)
+            with col2:
+                st.metric("Records Removed", initial_count - cleaned_count)
+            with col3:
+                st.metric("Final Records", cleaned_count)
+            
+            # Option to download cleaned data
+            st.markdown("---")
+            cleaned_excel = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Cleaned Data (CSV)",
+                data=cleaned_excel,
+                file_name="cleaned_student_data.csv",
+                mime="text/csv"
+            )
+            
+        except Exception as e:
+            st.error(f"Error processing file: {str(e)}")
+            st.stop()
     
     # Sidebar filters
     st.sidebar.header("🔍 Filters")
@@ -49,6 +160,7 @@ if uploaded_file is not None:
     
     # ===== KEY METRICS =====
     st.markdown("---")
+    st.subheader("📊 Key Performance Metrics")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -413,12 +525,34 @@ if uploaded_file is not None:
         st.download_button("Download Grade Analysis", grade_csv, "grade_analysis.csv", "text/csv")
 
 else:
-    st.info("👆 Please upload your cleaned student data Excel file to begin analysis.")
+    st.info("👆 Please upload your student data Excel file to begin")
+    
+    st.markdown("---")
+    st.subheader("📋 Required Excel Columns")
     st.markdown("""
-    ### Instructions:
-    1. First run the data cleaning script on your raw Excel file
-    2. Upload the cleaned Excel file here
-    3. Use the sidebar filters to explore different views
-    4. Navigate through tabs to see different analyses
-    5. Download analysis reports as needed
+    Your Excel file must contain these columns:
+    
+    **Identification Columns:**
+    - `Region` - Geographic region
+    - `Student Id` - Unique student identifier
+    - `Class` - Class with section (e.g., 6-A, 7-B)
+    - `Instructor Name` - Name of instructor
+    - `Program Type` - Program type code
+    
+    **Pre-Session (Questions & Answers):**
+    - `Q1`, `Q2`, `Q3`, `Q4`, `Q5` - Student responses
+    - `Q1_Answer`, `Q2_Answer`, `Q3_Answer`, `Q4_Answer`, `Q5_Answer` - Correct answers
+    
+    **Post-Session (Questions & Answers):**
+    - `Q1_Post`, `Q2_Post`, `Q3_Post`, `Q4_Post`, `Q5_Post` - Student responses
+    - `Q1_Post_Answer`, `Q2_Post_Answer`, `Q3_Post_Answer`, `Q4_Post_Answer`, `Q5_Post_Answer` - Correct answers
+    
+    ---
+    
+    **What happens when you upload:**
+    1. ✅ Data is cleaned (incomplete records removed)
+    2. ✅ Scores are calculated automatically
+    3. ✅ Program types are standardized
+    4. ✅ Interactive dashboard is generated
+    5. ✅ Download options for all analyses
     """)

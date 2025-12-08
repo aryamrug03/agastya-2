@@ -49,7 +49,7 @@ def clean_and_process_data(df):
     
     # Define answer columns
     pre_answers = ['Q1 Answer', 'Q2 Answer', 'Q3 Answer', 'Q4 Answer', 'Q5 Answer']
-    post_answers = ['Q1_Post_Answer', 'Q2_Post_Answer', 'Q3_Post_Answer', 'Q4_Post_Answer', 'Q5_Post_Answer']
+    post_answers = ['Q1_Answer_Post', 'Q2_Answer_Post', 'Q3_Answer_Post', 'Q4_Answer_Post', 'Q5_Answer_Post']
     
     # Calculate Pre-session scores
     df['Pre_Score'] = 0
@@ -545,7 +545,7 @@ else:
     
     **Post-Session (Questions & Answers):**
     - `Q1_Post`, `Q2_Post`, `Q3_Post`, `Q4_Post`, `Q5_Post` - Student responses
-    - `Q1_Post_Answer`, `Q2_Post_Answer`, `Q3_Post_Answer`, `Q4_Post_Answer`, `Q5_Post_Answer` - Correct answers
+    - `Q1_Answer_Post`, `Q2_Answer_Post`, `Q3_Answer_Post`, `Q4_Answer_Post`, `Q5_Answer_Post` - Correct answers
     
     ---
     

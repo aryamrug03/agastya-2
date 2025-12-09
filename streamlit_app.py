@@ -164,7 +164,7 @@ if uploaded_file is not None:
     
     # ===== KEY METRICS =====
     st.markdown("---")
-    st.subheader("📊 Key Performance Metrics")
+    st.subheader(" Key Performance Metrics")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -302,13 +302,13 @@ if uploaded_file is not None:
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("🏆 Top Scoring Regions (Post-Session)")
+            st.subheader(" Top Scoring Regions (Post-Session)")
             top_scoring = region_stats.nlargest(5, 'Post_Score_Pct')[['Region', 'Post_Score_Pct']]
             top_scoring['Post_Score_Pct'] = top_scoring['Post_Score_Pct'].apply(lambda x: f"{x:.1f}%")
             st.dataframe(top_scoring, hide_index=True, use_container_width=True)
         
         with col2:
-            st.subheader("📈 Most Improved Regions (Adaptation)")
+            st.subheader(" Most Improved Regions (Adaptation)")
             most_improved = region_stats.nlargest(5, 'Improvement')[['Region', 'Improvement']]
             most_improved['Improvement'] = most_improved['Improvement'].apply(lambda x: f"{x:.1f}%")
             st.dataframe(most_improved, hide_index=True, use_container_width=True)
@@ -374,14 +374,14 @@ if uploaded_file is not None:
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("🏆 Top Performing Instructors")
+            st.subheader(" Top Performing Instructors")
             top_perf = instructor_stats.nlargest(10, 'Post_Score_Pct')[['Instructor Name', 'Post_Score_Pct', 'Student Id']]
             top_perf.columns = ['Instructor', 'Post Score %', 'Students']
             top_perf['Post Score %'] = top_perf['Post Score %'].apply(lambda x: f"{x:.1f}%")
             st.dataframe(top_perf, hide_index=True, use_container_width=True)
         
         with col2:
-            st.subheader("📈 Best Adaptation (Improvement)")
+            st.subheader(" Best Adaptation (Improvement)")
             best_adapt = instructor_stats.nlargest(10, 'Improvement')[['Instructor Name', 'Improvement', 'Student Id']]
             best_adapt.columns = ['Instructor', 'Improvement %', 'Students']
             best_adapt['Improvement %'] = best_adapt['Improvement %'].apply(lambda x: f"{x:.1f}%")
@@ -389,7 +389,7 @@ if uploaded_file is not None:
         
         # All Instructors Assessment Count
         st.markdown("---")
-        st.subheader("📋 Complete Instructor List - Assessment Count")
+        st.subheader(" Complete Instructor List - Assessment Count")
         
         # Calculate number of assessments (Content Id) per instructor
         all_instructors = filtered_df.groupby('Instructor Name').agg({
@@ -439,7 +439,7 @@ if uploaded_file is not None:
         
         # Instructors per Region
         st.markdown("---")
-        st.subheader("👥 Number of Instructors per Region")
+        st.subheader(" Number of Instructors per Region")
         
         instructors_per_region = filtered_df.groupby('Region')['Instructor Name'].nunique().reset_index()
         instructors_per_region.columns = ['Region', 'Number of Instructors']
@@ -601,6 +601,187 @@ if uploaded_file is not None:
         display_prog['Post %'] = display_prog['Post %'].apply(lambda x: f"{x:.1f}%")
         display_prog['Improvement %'] = display_prog['Improvement %'].apply(lambda x: f"{x:.1f}%")
         st.dataframe(display_prog, hide_index=True, use_container_width=True)
+    
+    # ===== TAB 5: STUDENT PARTICIPATION =====
+    with tab5:
+        st.header("Student Participation Analysis")
+        st.markdown("### Number of Unique Students Taking Assessments")
+        
+        # Students per Grade
+        st.subheader(" Students per Grade/Parent Class")
+        students_per_grade = filtered_df.groupby('Parent_Class')['Student Id'].nunique().reset_index()
+        students_per_grade.columns = ['Grade', 'Number of Students']
+        students_per_grade = students_per_grade.sort_values('Grade')
+        
+        fig_grade = go.Figure()
+        fig_grade.add_trace(go.Bar(
+            x=students_per_grade['Grade'],
+            y=students_per_grade['Number of Students'],
+            marker_color='#1abc9c',
+            text=students_per_grade['Number of Students'],
+            textposition='outside',
+            textfont=dict(size=14, color='white')
+        ))
+        
+        fig_grade.update_layout(
+            title='Number of Students by Grade',
+            xaxis_title='Grade',
+            yaxis_title='Number of Students',
+            height=400,
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white'),
+            yaxis=dict(gridcolor='#404040'),
+            xaxis=dict(gridcolor='#404040')
+        )
+        
+        st.plotly_chart(fig_grade, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.dataframe(students_per_grade, hide_index=True, use_container_width=True)
+        with col2:
+            st.metric("Total Students Across All Grades", students_per_grade['Number of Students'].sum())
+            st.metric("Average Students per Grade", f"{students_per_grade['Number of Students'].mean():.0f}")
+        
+        # Students per Region
+        st.markdown("---")
+        st.subheader(" Students per Region")
+        students_per_region = filtered_df.groupby('Region')['Student Id'].nunique().reset_index()
+        students_per_region.columns = ['Region', 'Number of Students']
+        students_per_region = students_per_region.sort_values('Number of Students', ascending=False)
+        
+        fig_region = go.Figure()
+        fig_region.add_trace(go.Bar(
+            x=students_per_region['Region'],
+            y=students_per_region['Number of Students'],
+            marker_color='#e67e22',
+            text=students_per_region['Number of Students'],
+            textposition='outside',
+            textfont=dict(size=14, color='white')
+        ))
+        
+        fig_region.update_layout(
+            title='Number of Students by Region',
+            xaxis_title='Region',
+            yaxis_title='Number of Students',
+            height=400,
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white'),
+            yaxis=dict(gridcolor='#404040'),
+            xaxis=dict(gridcolor='#404040', tickangle=-45)
+        )
+        
+        st.plotly_chart(fig_region, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.dataframe(students_per_region, hide_index=True, use_container_width=True)
+        with col2:
+            st.metric("Total Regions", len(students_per_region))
+            st.metric("Average Students per Region", f"{students_per_region['Number of Students'].mean():.0f}")
+        
+        # Students per Program Type
+        st.markdown("---")
+        st.subheader(" Students per Program Type")
+        students_per_program = filtered_df.groupby('Program Type')['Student Id'].nunique().reset_index()
+        students_per_program.columns = ['Program Type', 'Number of Students']
+        students_per_program = students_per_program.sort_values('Number of Students', ascending=False)
+        
+        fig_program = go.Figure()
+        fig_program.add_trace(go.Bar(
+            x=students_per_program['Program Type'],
+            y=students_per_program['Number of Students'],
+            marker_color='#9b59b6',
+            text=students_per_program['Number of Students'],
+            textposition='outside',
+            textfont=dict(size=14, color='white')
+        ))
+        
+        fig_program.update_layout(
+            title='Number of Students by Program Type',
+            xaxis_title='Program Type',
+            yaxis_title='Number of Students',
+            height=400,
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white'),
+            yaxis=dict(gridcolor='#404040'),
+            xaxis=dict(gridcolor='#404040')
+        )
+        
+        st.plotly_chart(fig_program, use_container_width=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.dataframe(students_per_program, hide_index=True, use_container_width=True)
+        with col2:
+            st.metric("Total Program Types", len(students_per_program))
+            st.metric("Average Students per Program", f"{students_per_program['Number of Students'].mean():.0f}")
+        
+        # Combined breakdown: Region x Program Type
+        st.markdown("---")
+        st.subheader(" Students by Region and Program Type")
+        
+        students_region_program = filtered_df.groupby(['Region', 'Program Type'])['Student Id'].nunique().reset_index()
+        students_region_program.columns = ['Region', 'Program Type', 'Number of Students']
+        
+        # Pivot table for better visualization
+        pivot_table = students_region_program.pivot(index='Region', columns='Program Type', values='Number of Students').fillna(0).astype(int)
+        
+        st.dataframe(pivot_table, use_container_width=True)
+        
+        # Heatmap
+        fig_heatmap = go.Figure(data=go.Heatmap(
+            z=pivot_table.values,
+            x=pivot_table.columns,
+            y=pivot_table.index,
+            colorscale='Viridis',
+            text=pivot_table.values,
+            texttemplate='%{text}',
+            textfont={"size": 12},
+            colorbar=dict(title="Students")
+        ))
+        
+        fig_heatmap.update_layout(
+            title='Student Distribution Heatmap: Region vs Program Type',
+            xaxis_title='Program Type',
+            yaxis_title='Region',
+            height=500,
+            plot_bgcolor='#2b2b2b',
+            paper_bgcolor='#1e1e1e',
+            font=dict(color='white')
+        )
+        
+        st.plotly_chart(fig_heatmap, use_container_width=True)
+        
+        # Combined breakdown: Grade x Region
+        st.markdown("---")
+        st.subheader(" Students by Grade and Region")
+        
+        students_grade_region = filtered_df.groupby(['Parent_Class', 'Region'])['Student Id'].nunique().reset_index()
+        students_grade_region.columns = ['Grade', 'Region', 'Number of Students']
+        
+        # Pivot table
+        pivot_grade_region = students_grade_region.pivot(index='Grade', columns='Region', values='Number of Students').fillna(0).astype(int)
+        
+        st.dataframe(pivot_grade_region, use_container_width=True)
+        
+        # Download all participation data
+        st.markdown("---")
+        st.subheader("📥 Download Participation Reports")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            grade_csv = students_per_grade.to_csv(index=False)
+            st.download_button("Download Grade Data", grade_csv, "students_per_grade.csv", "text/csv")
+        with col2:
+            region_csv = students_per_region.to_csv(index=False)
+            st.download_button("Download Region Data", region_csv, "students_per_region.csv", "text/csv")
+        with col3:
+            program_csv = students_per_program.to_csv(index=False)
+            st.download_button("Download Program Data", program_csv, "students_per_program.csv", "text/csv")
     
     # ===== DOWNLOAD SECTION =====
     st.markdown("---")

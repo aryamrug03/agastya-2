@@ -186,19 +186,36 @@ if category_file is not None:
     try:
         with st.spinner("Loading category data..."):
             category_df = pd.read_excel(category_file)
+            
+            # Debug: Show columns found
+            st.info(f"Category file columns detected: {len(category_df.columns)} columns")
+            
             sheet_type = detect_sheet_type(category_df)
+            
             if sheet_type in ['category', 'both']:
                 category_df = process_category_data(category_df)
                 show_category_tabs = True
                 st.success(f"✅ Category data loaded: {len(category_df)} records")
+            elif sheet_type == 'assessment':
+                st.warning("⚠️ This file appears to be Assessment data. Please upload it in the Assessment section.")
+            else:
+                st.error(f"❌ Category file missing required columns. Need: Category, Student Correct Answer Pre, Student Correct Answer Post, Question No, Difficulty")
+                st.info("Available columns: " + ", ".join(category_df.columns.tolist()[:10]) + "...")
     except Exception as e:
         st.error(f"Error loading category file: {str(e)}")
+        import traceback
+        st.error(traceback.format_exc())
 
 if assessment_file is not None:
     try:
         with st.spinner("Loading assessment data..."):
             raw_df = pd.read_excel(assessment_file)
+            
+            # Debug: Show columns found
+            st.info(f"Assessment file columns detected: {len(raw_df.columns)} columns")
+            
             sheet_type = detect_sheet_type(raw_df)
+            
             if sheet_type in ['assessment', 'both']:
                 assessment_df, initial_count, cleaned_count = clean_and_process_data(raw_df)
                 show_assessment_tabs = True
@@ -211,8 +228,15 @@ if assessment_file is not None:
                     st.metric("Records Removed", initial_count - cleaned_count)
                 with col3:
                     st.metric("Final Records", cleaned_count)
+            elif sheet_type == 'category':
+                st.warning("⚠️ This file appears to be Category data. Please upload it in the Category section.")
+            else:
+                st.error(f"❌ Assessment file missing required columns. Need: Q1-Q5, Q1 Answer-Q5 Answer, Q1_Post-Q5_Post, Q1_Answer_Post-Q5_Answer_Post")
+                st.info("Available columns: " + ", ".join(raw_df.columns.tolist()[:10]) + "...")
     except Exception as e:
         st.error(f"Error loading assessment file: {str(e)}")
+        import traceback
+        st.error(traceback.format_exc())
 
 # Only proceed if we have data
 if not show_category_tabs and not show_assessment_tabs:

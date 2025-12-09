@@ -402,7 +402,7 @@ if df1 is not None or df2 is not None:
         tab_index += 1
     
     # ===== CATEGORY ANALYSIS TAB (if df2 exists) =====
-    if df2 is not None:
+    if df2 is not None and len(df2) > 0:
         with tabs[tab_index]:
             st.header("🎯 Category-wise Performance Analysis")
             st.markdown("### Analyze student performance across different question categories")
@@ -412,23 +412,38 @@ if df1 is not None or df2 is not None:
             col1, col2, col3, col4, col5 = st.columns(5)
             
             with col1:
-                categories = ['All'] + sorted(df2['Category'].unique().tolist())
+                try:
+                    categories = ['All'] + sorted(df2['Category'].dropna().unique().tolist())
+                except:
+                    categories = ['All']
                 selected_category = st.selectbox("📋 Category", categories, key='cat_filter')
             
             with col2:
-                regions = ['All'] + sorted(df2['Region'].unique().tolist())
+                try:
+                    regions = ['All'] + sorted(df2['Region'].dropna().unique().tolist())
+                except:
+                    regions = ['All']
                 selected_region_cat = st.selectbox("📍 Region", regions, key='region_cat')
             
             with col3:
-                subjects = ['All'] + sorted(df2['Subject'].unique().tolist())
+                try:
+                    subjects = ['All'] + sorted(df2['Subject'].dropna().unique().tolist())
+                except:
+                    subjects = ['All']
                 selected_subject = st.selectbox("📚 Subject", subjects, key='subject_cat')
             
             with col4:
-                topics = ['All'] + sorted(df2['Topic Name'].unique().tolist())
+                try:
+                    topics = ['All'] + sorted(df2['Topic Name'].dropna().unique().tolist())
+                except:
+                    topics = ['All']
                 selected_topic = st.selectbox("📖 Topic", topics, key='topic_cat')
             
             with col5:
-                grades = ['All'] + sorted(df2['Parent_Class'].unique().tolist())
+                try:
+                    grades = ['All'] + sorted(df2['Parent_Class'].dropna().unique().tolist())
+                except:
+                    grades = ['All']
                 selected_grade_cat = st.selectbox("🎓 Grade", grades, key='grade_cat')
             
             # Calculate metrics

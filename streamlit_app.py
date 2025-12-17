@@ -21,6 +21,17 @@ def process_category_data(df):
     df['Parent_Class'] = df['Class'].astype(str).str.extract(r'^(\d+)')[0]
     df = df[df['Parent_Class'].notna()]
     
+    # Standardize Program Types
+    program_type_mapping = {
+        'SCB': 'PCMB',
+        'SCC': 'PCMB',
+        'SCM': 'PCMB',
+        'SCP': 'PCMB',
+        'E-LOB': 'ELOB',
+        'DLC-2': 'DLC'
+    }
+    df['Program Type'] = df['Program Type'].replace(program_type_mapping)
+    
     # Standardize category names
     df['Category'] = df['Category'].str.strip().str.title()
     
@@ -54,11 +65,10 @@ def calculate_category_metrics(df, filters=None):
     # Calculate metrics by category
     category_stats = filtered_df.groupby('Category').agg({
         'Student Correct Answer Pre': ['sum', 'count'],
-        'Student Correct Answer Post': ['sum', 'count'],
-        'Student Id': 'nunique'
+        'Student Correct Answer Post': ['sum', 'count']
     }).reset_index()
     
-    category_stats.columns = ['Category', 'Pre_Correct', 'Pre_Total', 'Post_Correct', 'Post_Total', 'Students']
+    category_stats.columns = ['Category', 'Pre_Correct', 'Pre_Total', 'Post_Correct', 'Post_Total']
     
     # Calculate percentages
     category_stats['Pre_Percentage'] = (category_stats['Pre_Correct'] / category_stats['Pre_Total'] * 100).round(2)
@@ -160,14 +170,12 @@ try:
         st.success(f"✅ Data loaded successfully: {len(category_df)} question attempts analyzed")
         
         # Show summary metrics
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Question Attempts", len(category_df))
         with col2:
-            st.metric("Unique Students", category_df['Student Id'].nunique())
-        with col3:
             st.metric("Categories", category_df['Category'].nunique())
-        with col4:
+        with col3:
             st.metric("Topics", category_df['Topic Name'].nunique())
 
 except Exception as e:
@@ -326,8 +334,8 @@ st.markdown("---")
 st.subheader("📋 Detailed Category Statistics")
 
 display_stats = category_stats.copy()
-display_stats = display_stats[['Category', 'Pre_Percentage', 'Post_Percentage', 'Improvement', 'Lagging_Percentage', 'Students']]
-display_stats.columns = ['Category', 'Pre %', 'Post %', 'Improvement %', 'Lagging %', 'Unique Students']
+display_stats = display_stats[['Category', 'Pre_Percentage', 'Post_Percentage', 'Improvement', 'Lagging_Percentage']]
+display_stats.columns = ['Category', 'Pre %', 'Post %', 'Improvement %', 'Lagging %']
 
 st.dataframe(display_stats, hide_index=True, use_container_width=True)
 
@@ -380,7 +388,7 @@ else:
         st.metric(f"Question Attempts", len(cat_data))
     
     # Sub-tabs for different breakdowns
-    tab1, tab2, tab3, tab4 = st.tabs(["📍 By Region", "📚 By Grade", "⚡ By Difficulty", "📖 By Topic"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📍 By Region", "📚 By Grade", "📊 By Program Type", "⚡ By Difficulty", "📖 By Topic"])
     
     with tab1:
         st.markdown(f"#### {selected_category} - Performance by Region")
@@ -484,6 +492,54 @@ else:
         st.dataframe(display_grade, hide_index=True, use_container_width=True)
     
     with tab3:
+        st.markdown(f"#### {selected_category} - Performance by Program Type")
+        program_stats = cat_data.groupby('Program Type').agg({
+            'Student Correct Answer Pre': ['sum', 'count'],
+            'Student Correct Answer Post': ['sum', 'count']
+        }).reset_index()
+        program_stats.columns = ['Program Type', 'Pre_Correct', 'Pre_Total', 'Post_Correct', 'Post_Total']
+        program_stats['Pre_%'] = (program_stats['Pre_Correct'] / program_stats['Pre_Total'] * 100).round(2)
+        program_stats['Post_%'] = (program_stats['Post_Correct'] / program_stats['Post_Total'] * 100).round(2)
+        
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=program_stats['Program Type'], 
+            y=program_stats['Pre_%'], 
+            name='Pre-Session', 
+            marker_color='#3498db',
+            text=[f"{val:.1f}%" for val in program_stats['Pre_%']],
+            textposition='outside'
+        ))
+        fig.add_trace(go.Bar(
+            x=program_stats['Program Type'], 
+            y=program_stats['Post_%'], 
+            name='Post-Session', 
+            marker_color='#e74c3c',
+            text=[f"{val:.1f}%" for val in program_stats['Post_%']],
+            textposition='outside'
+        ))
+        fig.update_layout(
+            title=f'{selected_category} - Performance by Program Type',
+            xaxis_title='Program Type',
+            yaxis_title='Correct Answer %',
+            barmode='group', 
+            plot_bgcolor='#2b2b2b', 
+            paper_bgcolor='#1e1e1e', 
+            font=dict(color='white'), 
+            height=450,
+            yaxis=dict(range=[0, 110], gridcolor='#404040'),
+            xaxis=dict(gridcolor='#404040')
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Show table
+        display_program = program_stats[['Program Type', 'Pre_%', 'Post_%', 'Pre_Total']].copy()
+        display_program['Improvement'] = (display_program['Post_%'] - display_program['Pre_%']).round(2)
+        display_program.columns = ['Program Type', 'Pre %', 'Post %', 'Questions', 'Improvement %']
+        display_program = display_program[['Program Type', 'Pre %', 'Post %', 'Improvement %', 'Questions']]
+        st.dataframe(display_program, hide_index=True, use_container_width=True)
+    
+    with tab5:
         st.markdown(f"#### {selected_category} - Performance by Difficulty Level")
         diff_stats = cat_data.groupby('Difficulty').agg({
             'Student Correct Answer Pre': ['sum', 'count'],

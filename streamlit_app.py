@@ -21,16 +21,23 @@ def process_category_data(df):
     df['Parent_Class'] = df['Class'].astype(str).str.extract(r'^(\d+)')[0]
     df = df[df['Parent_Class'].notna()]
     
-    # Standardize Program Types
+    # Standardize Program Types - Comprehensive mapping
     program_type_mapping = {
         'SCB': 'PCMB',
         'SCC': 'PCMB',
         'SCM': 'PCMB',
         'SCP': 'PCMB',
+        'SC': 'PCMB',  # Just in case
         'E-LOB': 'ELOB',
-        'DLC-2': 'DLC'
+        'ELOB': 'ELOB',  # Keep ELOB as ELOB
+        'E LOB': 'ELOB',  # Handle spacing variations
+        'DLC-2': 'DLC',
+        'DLC2': 'DLC',  # Handle variations without hyphen
+        'DLC': 'DLC'  # Keep DLC as DLC
     }
-    df['Program Type'] = df['Program Type'].replace(program_type_mapping)
+    
+    # Apply mapping with strip to handle any whitespace
+    df['Program Type'] = df['Program Type'].str.strip().replace(program_type_mapping)
     
     # Standardize category names
     df['Category'] = df['Category'].str.strip().str.title()
@@ -168,6 +175,9 @@ try:
         category_df = process_category_data(category_df)
         
         st.success(f"✅ Data loaded successfully: {len(category_df)} question attempts analyzed")
+        
+        # Show data standardization info
+        st.info("📝 Program Types have been standardized: SCB/SCC/SCM/SCP → PCMB | E-LOB → ELOB | DLC-2 → DLC")
         
         # Show summary metrics
         col1, col2, col3 = st.columns(3)

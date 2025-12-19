@@ -39,6 +39,9 @@ def process_category_data(df):
     
     # Standardize category names
     df['Category'] = df['Category'].str.strip().str.title()
+
+    # Standardize subject names
+    df["Subject'] = df['Subject'].str.strip().str.title() 
     
     # Ensure correct answer columns are numeric
     df['Student Correct Answer Pre'] = pd.to_numeric(df['Student Correct Answer Pre'], errors='coerce').fillna(0)
@@ -681,5 +684,6 @@ with col2:
             f"{selected_category.lower().replace(' ', '_')}_detailed.csv",
             "text/csv"
         )
+
 
 

@@ -398,7 +398,7 @@ else:
         st.metric(f"Question Attempts", len(cat_data))
     
     # Sub-tabs for different breakdowns
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📍 By Region", "📚 By Grade", "📊 By Program Type", "⚡ By Difficulty", "📖 By Topic"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📍 By Region", "📚 By Grade", "📊 By Program Type", "📖 By Topic", "⚡ By Difficulty"])
     
     with tab1:
         st.markdown(f"#### {selected_category} - Performance by Region")
@@ -683,3 +683,4 @@ with col2:
             f"{selected_category.lower().replace(' ', '_')}_detailed.csv",
             "text/csv"
         )
+

@@ -27,11 +27,9 @@ def process_category_data(df):
         'SCC': 'PCMB',
         'SCM': 'PCMB',
         'SCP': 'PCMB',
-        'SC': 'PCMB',  # Just in case
         'E-LOB': 'ELOB',
         'ELOB': 'ELOB',  # Keep ELOB as ELOB
         'E LOB': 'ELOB',  # Handle spacing variations
-        'DLC-2': 'DLC',
         'DLC2': 'DLC',  # Handle variations without hyphen
         'DLC': 'DLC'  # Keep DLC as DLC
     }
@@ -683,4 +681,5 @@ with col2:
             f"{selected_category.lower().replace(' ', '_')}_detailed.csv",
             "text/csv"
         )
+
 
